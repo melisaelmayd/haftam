@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Haftam">
+<meta name="theme-color" content="#2f5d8a">
+<title>Haftam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a planner spread — week header with progress, a weekly focus line, then seven day columns that wrap to one column on phones. */
+:root {
+  --paper: #f2f4f6;
+  --sheet: #ffffff;
+  --ink: #1b2430;
+  --ink-soft: #5d6878;
+  --rule: #dde2e8;
+  --accent: #2f5d8a;
+  --accent-soft: #e3ecf5;
+  --done: #3f8a6a;
+  --tag-is: #2f5d8a;
+  --tag-icerik: #b0477a;
+  --tag-kisisel: #7a6a1e;
+  --tag-saglik: #2f8a6e;
+  --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12161c; --sheet: #1a2029; --ink: #e6eaf0; --ink-soft: #97a2b1;
+    --rule: #2b333f; --accent: #7fb0e0; --accent-soft: #223246; --done: #6cc39c;
+    --tag-is: #7fb0e0; --tag-icerik: #e58cb8; --tag-kisisel: #d6c063; --tag-saglik: #6cc39c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12161c; --sheet: #1a2029; --ink: #e6eaf0; --ink-soft: #97a2b1;
+  --rule: #2b333f; --accent: #7fb0e0; --accent-soft: #223246; --done: #6cc39c;
+  --tag-is: #7fb0e0; --tag-icerik: #e58cb8; --tag-kisisel: #d6c063; --tag-saglik: #6cc39c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+}
+.wrap {
+  max-width: 1320px; margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 22px;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 24px; }
+.title-block { display: grid; gap: 4px; min-width: 0; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4.5vw, 44px); line-height: 1.05; letter-spacing: -.01em; text-wrap: balance; }
+.nav { display: flex; gap: 8px; align-items: center; }
+.nav button {
+  border: 1px solid var(--rule); background: var(--sheet); border-radius: 999px;
+  height: 38px; min-width: 38px; padding: 0 14px; font-weight: 500;
+}
+.nav button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Summary row */
+.summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px; }
+@media (max-width: 760px) { .summary { grid-template-columns: 1fr; } }
+.progress, .focus {
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px;
+  padding: 16px 18px; display: grid; gap: 10px; min-width: 0;
+}
+.progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.big { font-family: var(--font-display); font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.big small { font-size: 16px; color: var(--ink-soft); font-weight: 500; }
+.bar { height: 8px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: var(--done); border-radius: 99px; transition: width .4s ease; }
+.focus label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.focus input {
+  border: none; border-bottom: 1px dashed var(--rule); background: transparent;
+  font-family: var(--font-display); font-size: 20px; font-weight: 500; padding: 4px 0; width: 100%;
+}
+.focus input::placeholder { color: var(--ink-soft); opacity: .7; }
+.focus input:focus { outline: none; border-bottom-color: var(--accent); }
+.status { font-size: 12px; color: var(--ink-soft); }
+
+/* Days */
+.days { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.day {
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px;
+  padding: 14px 14px 12px; display: grid; gap: 10px; align-content: start; min-width: 0;
+}
+.day.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.day-name { font-family: var(--font-display); font-weight: 700; font-size: 18px; }
+.day-date { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+.today-pill { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; background: var(--accent); color: var(--sheet); border-radius: 99px; padding: 2px 8px; margin-left: 6px; vertical-align: 2px; }
+.day-count { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.empty { font-size: 13px; color: var(--ink-soft); padding: 4px 0; }
+.task { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 6px 4px; border-radius: 8px; }
+.task:hover { background: var(--accent-soft); }
+.check {
+  width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; border: 1.5px solid var(--ink-soft);
+  background: transparent; display: grid; place-items: center; padding: 0;
+}
+.check svg { width: 13px; height: 13px; opacity: 0; }
+.task.done .check { background: var(--done); border-color: var(--done); }
+.task.done .check svg { opacity: 1; }
+.task-text { min-width: 0; overflow-wrap: anywhere; display: grid; gap: 3px; }
+.task.done .task-text .t { text-decoration: line-through; color: var(--ink-soft); }
+.tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; color: var(--ink-soft); }
+.tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--ink-soft)); }
+.actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+.task:hover .actions, .task:focus-within .actions { opacity: 1; }
+@media (hover: none) { .actions { opacity: 1; } }
+.icon-btn { border: none; background: transparent; width: 28px; height: 28px; border-radius: 6px; color: var(--ink-soft); display: grid; place-items: center; padding: 0; }
+.icon-btn:hover { color: var(--ink); background: var(--sheet); }
+.icon-btn svg { width: 15px; height: 15px; }
+.add { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.add input {
+  border: 1px solid transparent; background: var(--paper); border-radius: 8px; padding: 8px 10px; min-width: 0;
+}
+.add input:focus { outline: none; border-color: var(--accent); }
+.add-btn { border: none; background: var(--accent); color: var(--sheet); border-radius: 8px; padding: 0 12px; font-weight: 600; font-size: 14px; }
+.add-btn:hover { filter: brightness(1.1); }
+.add select { border: 1px solid var(--rule); background: var(--sheet); border-radius: 8px; padding: 0 6px; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.backup { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; }
+.backup-btns { display: flex; gap: 8px; }
+.backup-btns button, .file-btn {
+  border: 1px solid var(--rule); background: var(--sheet); border-radius: 999px;
+  height: 34px; padding: 0 14px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; cursor: pointer;
+}
+.backup-btns button:hover, .file-btn:hover { border-color: var(--accent); color: var(--accent); }
+[hidden] { display: none !important; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+.gate { max-width: 420px; margin: 8vh auto 0; background: var(--sheet); border: 1px solid var(--rule); border-radius: 16px; padding: 24px; display: grid; gap: 14px; }
+.gate h2 { margin: 0; font-family: var(--font-display); font-size: 26px; }
+.gate p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+.gate label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.gate input { border: 1px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 10px 12px; font-weight: 400; min-width: 0; }
+.gate input:focus { outline: none; border-color: var(--accent); }
+.primary { border: none; background: var(--accent); color: var(--sheet); border-radius: 10px; height: 42px; font-weight: 600; }
+.linkish { border: none; background: none; color: var(--ink-soft); text-decoration: underline; font-size: 13px; justify-self: start; padding: 0; }
+.err { color: #c0392b; font-size: 13px; min-height: 1em; }
+</style>
+</head>
+<body>
+
+<!-- Kurulum: Supabase proje adresini ve publishable/anon anahtarını buraya yazabilirsin. Boş bırakırsan uygulama ilk açılışta sorar. -->
+<script>
+window.HAFTAM_CONFIG = {
+  supabaseUrl: "https://geayzdntqlsblogxghsa.supabase.co",
+  supabaseKey: "sb_publishable_vjFyng0tCc0cpvaSbD53-w_e_IJWkRH"
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<div class="wrap">
+  <section class="gate" id="setupGate" hidden>
+    <h2>Haftam kurulumu</h2>
+    <p>Supabase projenin adresini ve anahtarını gir. Bunu her cihazda bir kez yapman yeterli.</p>
+    <label>Proje adresi (Project URL)<input id="cfgUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
+    <label>Anahtar (publishable ya da anon key)<input id="cfgKey" type="text" placeholder="sb_publishable_… ya da eyJ…" autocomplete="off"></label>
+    <div class="err" id="setupErr"></div>
+    <button class="primary" id="cfgSave" type="button">Kaydet</button>
+  </section>
+
+  <section class="gate" id="loginGate" hidden>
+    <h2>Haftam</h2>
+    <p>Supabase'de oluşturduğun e-posta ve şifreyle giriş yap.</p>
+    <label>E-posta<input id="email" type="email" autocomplete="email"></label>
+    <label>Şifre<input id="password" type="password" autocomplete="current-password"></label>
+    <div class="err" id="loginErr"></div>
+    <button class="primary" id="loginBtn" type="button">Giriş yap</button>
+    <button class="linkish" id="resetCfg" type="button">Proje ayarlarını değiştir</button>
+  </section>
+
+  <div id="app" hidden style="display:grid;gap:22px">
+  <header class="top">
+    <div class="title-block">
+      <span class="eyebrow" id="weekNo">Hafta</span>
+      <h1 id="weekRange">Bu hafta</h1>
+    </div>
+    <div class="nav">
+      <button id="prev" aria-label="Önceki hafta">‹</button>
+      <button id="thisWeek">Bu hafta</button>
+      <button id="next" aria-label="Sonraki hafta">›</button>
+    </div>
+  </header>
+  <div class="backup">
+    <span class="status">Telefonun ve bilgisayarın aynı planı görür.</span>
+    <div class="backup-btns">
+      <button id="exportBtn" type="button">Yedeği indir</button>
+      <label class="file-btn" for="importFile">Yedeği yükle</label>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+      <button id="logoutBtn" type="button">Çıkış</button>
+    </div>
+  </div>
+
+  <section class="summary">
+    <div class="progress">
+      <div class="progress-head">
+        <span class="eyebrow">Tamamlanan adımlar</span>
+        <span class="status" id="status">Yükleniyor…</span>
+      </div>
+      <div class="big" id="doneCount">0 <small>/ 0</small></div>
+      <div class="bar"><span id="barFill"></span></div>
+    </div>
+    <div class="focus">
+      <label for="focusInput">Haftanın odağı</label>
+      <input id="focusInput" type="text" maxlength="140" placeholder="Bu hafta neye odaklanıyorsun?">
+    </div>
+  </section>
+
+  <section class="days" id="days" aria-label="Haftanın günleri"></section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+  const MONTHS = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+  const TAGS = {
+    "": { label: "Etiketsiz", color: "" },
+    is: { label: "İş", color: "var(--tag-is)" },
+    icerik: { label: "İçerik", color: "var(--tag-icerik)" },
+    kisisel: { label: "Kişisel", color: "var(--tag-kisisel)" },
+    saglik: { label: "Sağlık", color: "var(--tag-saglik)" }
+  };
+  const ICON_CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+  const ICON_NEXT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg>';
+  const ICON_DEL = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+  const $ = id => document.getElementById(id);
+
+  // ---- dates ----
+  const pad = n => String(n).padStart(2, "0");
+  const keyOf = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+  function fromKey(k) { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); }
+  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function isoWeek(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y0) / 864e5 + 1) / 7); }
+
+  let week = keyOf(mondayOf(new Date()));
+  let tasks = [];        // {id, week, day, text, done, tag, ord}
+  let focusByWeek = {};
+  let sb = null;
+  let user = null;
+
+  function setStatus(t) { $("status").textContent = t; }
+  function show(which) {
+    $("setupGate").hidden = which !== "setup";
+    $("loginGate").hidden = which !== "login";
+    $("app").hidden = which !== "app";
+  }
+
+  // ---- config ----
+  const CFG_KEY = "haftam-supabase-config";
+  function readCfg() {
+    const c = window.HAFTAM_CONFIG || {};
+    if (c.supabaseUrl && c.supabaseKey) return { url: c.supabaseUrl, key: c.supabaseKey, baked: true };
+    try { const s = JSON.parse(localStorage.getItem(CFG_KEY)); if (s && s.url && s.key) return s; } catch (e) {}
+    return null;
+  }
+
+  // ---- data ----
+  async function load() {
+    const [t, w] = await Promise.all([
+      sb.from("tasks").select("id,week,day,text,done,tag,ord"),
+      sb.from("weeks").select("week,focus")
+    ]);
+    if (t.error) throw t.error;
+    if (w.error) throw w.error;
+    tasks = t.data;
+    focusByWeek = {};
+    w.data.forEach(r => { focusByWeek[r.week] = r.focus || ""; });
+    render();
+    setStatus("Güncel");
+  }
+  function refresh() { if (sb && user) load().catch(e => setStatus("Yüklenemedi: " + (e.message || e))); }
+
+  async function run(op) {
+    setStatus("Kaydediliyor…");
+    try {
+      const res = await op;
+      if (res && res.error) throw res.error;
+      await load();
+      setStatus("Kaydedildi");
+    } catch (e) { setStatus("Kaydedilemedi: " + (e.message || e)); }
+  }
+  const api = {
+    add: t => run(sb.from("tasks").insert(t)),
+    update: (id, patch) => run(sb.from("tasks").update(patch).eq("id", id)),
+    remove: id => run(sb.from("tasks").delete().eq("id", id)),
+    setFocus: (w, text) => run(sb.from("weeks").upsert({ user_id: user.id, week: w, focus: text }, { onConflict: "user_id,week" }))
+  };
+
+  // ---- render ----
+  const daysEl = $("days");
+  function renderHeader() {
+    const mon = fromKey(week), sun = addDays(mon, 6);
+    const same = mon.getMonth() === sun.getMonth();
+    $("weekRange").textContent = mon.getDate() + (same ? "" : " " + MONTHS[mon.getMonth()]) + " – " + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
+    const diff = Math.round((fromKey(week) - mondayOf(new Date())) / (7 * 864e5));
+    const rel = diff === 0 ? "Bu hafta" : diff === 1 ? "Gelecek hafta" : diff === -1 ? "Geçen hafta" : (diff > 0 ? diff + " hafta sonra" : -diff + " hafta önce");
+    $("weekNo").textContent = isoWeek(mon) + ". hafta · " + rel;
+  }
+  function renderFocus() { const inp = $("focusInput"); if (document.activeElement !== inp) inp.value = focusByWeek[week] || ""; }
+  function renderProgress(list) {
+    const done = list.filter(t => t.done).length, total = list.length, el = $("doneCount");
+    el.textContent = done + " "; const sm = document.createElement("small"); sm.textContent = "/ " + total; el.appendChild(sm);
+    $("barFill").style.width = total ? (done / total * 100) + "%" : "0";
+  }
+  function render() {
+    renderHeader(); renderFocus();
+    const list = tasks.filter(t => t.week === week);
+    renderProgress(list);
+    const drafts = {}, tagSel = {}; let focused = null;
+    daysEl.querySelectorAll(".add input").forEach(i => { drafts[i.dataset.day] = i.value; if (document.activeElement === i) focused = i.dataset.day; });
+    daysEl.querySelectorAll(".add select").forEach(s => { tagSel[s.dataset.day] = s.value; });
+    daysEl.textContent = "";
+    const todayKey = keyOf(new Date());
+    for (let d = 0; d < 7; d++) {
+      const date = addDays(fromKey(week), d);
+      const items = list.filter(t => t.day === d).sort((a, b) => (a.done - b.done) || (a.ord - b.ord));
+      const isToday = keyOf(date) === todayKey;
+      const sec = document.createElement("article"); sec.className = "day" + (isToday ? " today" : "");
+      const head = document.createElement("div"); head.className = "day-head";
+      const left = document.createElement("div");
+      const nm = document.createElement("span"); nm.className = "day-name"; nm.textContent = DAYS[d]; left.appendChild(nm);
+      if (isToday) { const p = document.createElement("span"); p.className = "today-pill"; p.textContent = "Bugün"; left.appendChild(p); }
+      const dt = document.createElement("div"); dt.className = "day-date"; dt.textContent = date.getDate() + " " + MONTHS[date.getMonth()]; left.appendChild(dt);
+      const cnt = document.createElement("span"); cnt.className = "day-count"; cnt.textContent = items.length ? items.filter(t => t.done).length + "/" + items.length : "";
+      head.append(left, cnt); sec.appendChild(head);
+      const ul = document.createElement("ul"); ul.className = "tasks";
+      if (!items.length) { const e = document.createElement("li"); e.className = "empty"; e.textContent = "Henüz adım yok."; ul.appendChild(e); }
+      items.forEach(t => ul.appendChild(taskEl(t)));
+      sec.appendChild(ul);
+      const row = document.createElement("div"); row.className = "add";
+      const inp = document.createElement("input"); inp.type = "text"; inp.placeholder = "Adım ekle…"; inp.maxLength = 200;
+      inp.id = "add-" + d; inp.dataset.day = d; inp.setAttribute("aria-label", DAYS[d] + " için adım ekle"); inp.value = drafts[d] || "";
+      const sel = document.createElement("select"); sel.dataset.day = d; sel.id = "tag-" + d; sel.setAttribute("aria-label", "Etiket");
+      Object.entries(TAGS).forEach(([k, v]) => { const o = document.createElement("option"); o.value = k; o.textContent = k ? v.label : "—"; sel.appendChild(o); });
+      sel.value = tagSel[d] || "";
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "add-btn"; btn.textContent = "Ekle";
+      const submit = () => {
+        const text = inp.value.trim();
+        if (!text) { inp.focus(); return; }
+        inp.value = "";
+        api.add({ week, day: d, text, done: false, tag: sel.value, ord: Date.now() });
+      };
+      btn.addEventListener("click", submit);
+      inp.addEventListener("keydown", ev => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); submit(); } });
+      row.append(inp, sel, btn); sec.appendChild(row);
+      daysEl.appendChild(sec);
+      if (focused == d) inp.focus();
+    }
+  }
+  function taskEl(t) {
+    const li = document.createElement("li"); li.className = "task" + (t.done ? " done" : "");
+    const cb = document.createElement("button"); cb.className = "check"; cb.innerHTML = ICON_CHECK;
+    cb.setAttribute("role", "checkbox"); cb.setAttribute("aria-checked", t.done ? "true" : "false");
+    cb.setAttribute("aria-label", (t.done ? "Yapılmadı olarak işaretle: " : "Yapıldı olarak işaretle: ") + t.text);
+    cb.addEventListener("click", () => { t.done = !t.done; render(); api.update(t.id, { done: t.done }); });
+    const tx = document.createElement("div"); tx.className = "task-text";
+    const s = document.createElement("span"); s.className = "t"; s.textContent = t.text; tx.appendChild(s);
+    if (t.tag && TAGS[t.tag]) { const g = document.createElement("span"); g.className = "tag"; g.style.setProperty("--c", TAGS[t.tag].color); g.textContent = TAGS[t.tag].label; tx.appendChild(g); }
+    const act = document.createElement("div"); act.className = "actions";
+    if (!t.done) {
+      const mv = document.createElement("button"); mv.className = "icon-btn"; mv.innerHTML = ICON_NEXT;
+      mv.title = "Ertesi güne taşı"; mv.setAttribute("aria-label", "Ertesi güne taşı: " + t.text);
+      mv.addEventListener("click", () => { const n = addDays(fromKey(t.week), t.day + 1); api.update(t.id, { week: keyOf(mondayOf(n)), day: (n.getDay() + 6) % 7, ord: Date.now() }); });
+      act.appendChild(mv);
+    }
+    const del = document.createElement("button"); del.className = "icon-btn"; del.innerHTML = ICON_DEL;
+    del.title = "Sil"; del.setAttribute("aria-label", "Sil: " + t.text);
+    del.addEventListener("click", () => api.remove(t.id));
+    act.appendChild(del);
+    li.append(cb, tx, act);
+    return li;
+  }
+
+  // ---- controls ----
+  function shift(n) { week = keyOf(addDays(fromKey(week), 7 * n)); render(); }
+  $("prev").addEventListener("click", () => shift(-1));
+  $("next").addEventListener("click", () => shift(1));
+  $("thisWeek").addEventListener("click", () => { week = keyOf(mondayOf(new Date())); render(); });
+  let focusTimer = null;
+  $("focusInput").addEventListener("input", () => {
+    clearTimeout(focusTimer);
+    const w = week, v = $("focusInput").value;
+    focusTimer = setTimeout(() => { if ((focusByWeek[w] || "") !== v) { focusByWeek[w] = v; api.setFocus(w, v); } }, 700);
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  window.addEventListener("focus", refresh);
+  setInterval(() => { if (!document.hidden) refresh(); }, 30000);
+
+  // ---- backup ----
+  $("exportBtn").addEventListener("click", () => {
+    const out = { app: "haftam", version: 2, exportedAt: new Date().toISOString(), tasks: tasks.map(({ id, ...r }) => r), weeks: focusByWeek };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }));
+    a.download = "haftam-yedek-" + keyOf(new Date()) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setStatus("Yedek indirildi");
+  });
+  $("importFile").addEventListener("change", ev => {
+    const f = ev.target.files && ev.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = async () => {
+      try {
+        const d = JSON.parse(r.result);
+        const list = Array.isArray(d.tasks) ? d.tasks : Object.values(d.tasks || {});
+        const rows = list.filter(t => t && t.week && t.text).map(t => ({ week: t.week, day: t.day | 0, text: String(t.text), done: !!t.done, tag: t.tag || "", ord: t.ord || t.order || Date.now() }));
+        const wrows = Object.entries(d.weeks || {}).filter(([, v]) => v).map(([w, v]) => ({ user_id: user.id, week: w, focus: String(v) }));
+        if (rows.length) { const x = await sb.from("tasks").insert(rows); if (x.error) throw x.error; }
+        if (wrows.length) { const y = await sb.from("weeks").upsert(wrows, { onConflict: "user_id,week" }); if (y.error) throw y.error; }
+        await load();
+        setStatus(rows.length + " adım yüklendi");
+      } catch (e) { setStatus("Yedek yüklenemedi: " + (e.message || "dosya bir Haftam yedeği değil")); }
+      ev.target.value = "";
+    };
+    r.readAsText(f);
+  });
+
+  // ---- auth ----
+  async function enterApp(u) { user = u; show("app"); render(); setStatus("Yükleniyor…"); refresh(); }
+  $("loginBtn").addEventListener("click", async () => {
+    $("loginErr").textContent = "";
+    const { data, error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+    if (error) { $("loginErr").textContent = error.message === "Invalid login credentials" ? "E-posta ya da şifre hatalı." : error.message; return; }
+    enterApp(data.user);
+  });
+  $("password").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
+  $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); user = null; tasks = []; show("login"); });
+  $("resetCfg").addEventListener("click", () => { try { localStorage.removeItem(CFG_KEY); } catch (e) {} location.reload(); });
+  $("cfgSave").addEventListener("click", () => {
+    const url = $("cfgUrl").value.trim().replace(/\/+$/, ""), key = $("cfgKey").value.trim();
+    if (!/^https:\/\/.+/.test(url) || key.length < 20) { $("setupErr").textContent = "Adres https:// ile başlamalı ve anahtar eksiksiz olmalı."; return; }
+    try { localStorage.setItem(CFG_KEY, JSON.stringify({ url, key })); } catch (e) {}
+    start({ url, key });
+  });
+
+  async function start(cfg) {
+    if (!window.supabase || !window.supabase.createClient) { show("setup"); $("setupErr").textContent = "Bağlantı kütüphanesi yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile."; return; }
+    if (!cfg) { show("setup"); return; }
+    if (cfg.baked) $("resetCfg").hidden = true;
+    sb = window.supabase.createClient(cfg.url, cfg.key, { auth: { persistSession: true, autoRefreshToken: true } });
+    const { data } = await sb.auth.getSession();
+    if (data && data.session) enterApp(data.session.user); else show("login");
+  }
+  start(readCfg());
+})();
+</script>
+</body>
+</html>
